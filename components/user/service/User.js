@@ -441,16 +441,6 @@ try {
     }
   }
 
-  getBankToPay(bankId, startDate, endDate) {
-    if (!this.isAdmin) {
-      throw new UnauthorizedError("Not an Admin");
-    }
-
-    let [myBank, myBankIndex] = Bank.findBank(bankId)
-    
-    return myBank.getAccountsList()[myBankIndex].getPassbook()
-  }
-
   static async authenticateUser(username, password) {
     try {
     let myUser = User.findUserByUsername(username);
