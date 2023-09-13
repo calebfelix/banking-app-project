@@ -163,9 +163,9 @@ const transferAmount =  (req, resp, next) => {
         throw new UnauthorizedError("User does not access");
       }
     
-    let amount = req.body.amount
+    let {transferAmount, toAccountNo} = req.body
     let myUser = User.findUserById(userId)
-    let myAcc = myUser.withdraw(AccountNo, amount)
+    let myAcc = myUser.transfer(AccountNo, toAccountNo, transferAmount)
     
     resp.status(200).send(myAcc);
   } catch (error) {
@@ -173,4 +173,88 @@ const transferAmount =  (req, resp, next) => {
   }
 }
 
-module.exports = { createAccount, getAllAccounts, getAccountByAccNo, depositAmount, withdrawAmount, transferAmount };
+const getNetWorth = (req, resp, next)=>{
+try {
+  let userId = Number(req.params.userId);
+    if (isNaN(userId)) {
+      throw new ValidationError("invalid userId");
+    }
+
+    // does not have access to other users
+    const token = req.cookies.auth;
+      if (!token) {
+        throw new UnauthorizedError("Token Not Found");
+      }
+      let payload = Jwtauthentication.verifyToken(token);
+      if(payload.userId != userId){
+        throw new UnauthorizedError("User does not access");
+      }
+
+      let myUser = User.findUserById(userId)
+      let netWorth = myUser.getNetWorth()
+      resp.status(200).json({netWorth:netWorth})
+} catch (error) {
+  next(error)
+}
+}
+
+const getPassbook = (req, resp, next) => {
+  try {
+    let userId = Number(req.params.userId);
+    if (isNaN(userId)) {
+      throw new ValidationError("invalid userId");
+    }
+    let AccountNo = Number(req.params.AccountNo);
+    if (isNaN(AccountNo)) {
+      throw new ValidationError("invalid AccountNo");
+    }
+
+    // does not have access to other users
+    const token = req.cookies.auth;
+      if (!token) {
+        throw new UnauthorizedError("Token Not Found");
+      }
+      let payload = Jwtauthentication.verifyToken(token);
+      if(payload.userId != userId){
+        throw new UnauthorizedError("User does not access");
+      }
+
+      let myAcc = Account.findByAccountNo(AccountNo)
+    
+    resp.status(200).send(myAcc.passbook);
+  } catch (error) {
+    next(error);
+  }
+}
+
+const getAccountByDate = (req, resp, next) => {
+  try {
+    let userId = Number(req.params.userId);
+    if (isNaN(userId)) {
+      throw new ValidationError("invalid userId");
+    }
+    let AccountNo = Number(req.params.AccountNo);
+    if (isNaN(AccountNo)) {
+      throw new ValidationError("invalid AccountNo");
+    }
+
+    // does not have access to other users
+    const token = req.cookies.auth;
+      if (!token) {
+        throw new UnauthorizedError("Token Not Found");
+      }
+      let payload = Jwtauthentication.verifyToken(token);
+      if(payload.userId != userId){
+        throw new UnauthorizedError("User does not access");
+      }
+
+      let {startDate, endDate} = req.query
+      let myUser = User.findUserById(userId)
+      let myTransactions = myUser.getAccountTransactionsByDate(AccountNo, startDate, endDate)
+    resp.status(200).send(myTransactions);
+  } catch (error) {
+    next(error);
+  }
+}
+
+module.exports = { getAccountByDate, createAccount,getNetWorth, getAllAccounts, getAccountByAccNo, depositAmount, withdrawAmount, transferAmount,getPassbook };

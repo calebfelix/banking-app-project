@@ -47,4 +47,6 @@ const getAllBanks = (req, resp, next) => {
       next(error);
     }
   };
+
+
   module.exports = {getAllBanks, createBank, getBankById, updateBank}

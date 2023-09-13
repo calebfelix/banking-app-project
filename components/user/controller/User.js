@@ -1,5 +1,6 @@
 const User = require("../service/User");
 const { ValidationError } = require("../../../error");
+const Bank = require("../../bank/service/Bank");
 
 
 
@@ -49,4 +50,20 @@ const getAllUsers = (req, resp, next) => {
       next(error);
     }
   };
-  module.exports = {getAllUsers, createUser, getUserById, updateUser}
+
+  const getBankTotal= (req, resp, next) => {
+    try {
+      let bankId = Number(req.params.bankId);
+      if (isNaN(bankId)) {
+        throw new ValidationError("invalid parameters");
+      }
+
+      let mybank = Bank.findBankById(bankId)
+
+      resp.status(200).json({"bankTotal": mybank.bankTotal});
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  module.exports = {getAllUsers, createUser, getUserById, updateUser, getBankTotal}

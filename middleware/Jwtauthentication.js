@@ -1,9 +1,9 @@
 const jwt = require("jsonwebtoken");
-require('dotenv').config()
+require("dotenv").config();
 const { UnauthorizedError, NotFoundError } = require("../error");
 
 class Jwtauthentication {
-  static secretKey = process.env.JWT_SECRET_KEY
+  static secretKey = process.env.JWT_SECRET_KEY;
   constructor(userId, username, isAdmin) {
     this.userId = userId;
     this.username = username;
@@ -13,10 +13,16 @@ class Jwtauthentication {
   static authenticate(userId, username, isAdmin) {
     try {
       let payload = new Jwtauthentication(userId, username, isAdmin);
-      let token = jwt.sign(
-        JSON.stringify(payload),
-        Jwtauthentication.secretKey
-      );
+
+      let myobj = {
+        userId: payload.userId,
+        username: payload.username,
+        isAdmin: payload.isAdmin,
+      };
+      let token = jwt.sign(myobj, Jwtauthentication.secretKey, {
+        expiresIn: 60 * 60,
+      });
+
       return token;
     } catch (error) {
       throw error;
@@ -32,7 +38,6 @@ class Jwtauthentication {
     }
   }
 
-
   static isAdmin(req, res, next) {
     try {
       console.log("isAdmin Started");
@@ -43,7 +48,7 @@ class Jwtauthentication {
       let payload = Jwtauthentication.verifyToken(token);
       if (payload.isAdmin) {
         next();
-        return
+        return;
       } else {
         throw new UnauthorizedError("Not an Admin");
       }
@@ -62,7 +67,7 @@ class Jwtauthentication {
       let payload = Jwtauthentication.verifyToken(token);
       if (!payload.isAdmin) {
         next();
-        return
+        return;
       } else {
         throw new UnauthorizedError("Not an User");
       }
@@ -71,14 +76,14 @@ class Jwtauthentication {
     }
   }
 
-  static checkValid(req, res, next){
+  static checkValid(req, res, next) {
     try {
       const token = req.cookies.auth;
       if (!token) {
         throw new UnauthorizedError("Token Not Found");
       }
       let payload = Jwtauthentication.verifyToken(token);
-      return payload
+      return payload;
     } catch (error) {
       next(error);
     }
@@ -94,9 +99,9 @@ class Jwtauthentication {
       let payload = Jwtauthentication.verifyToken(token);
       if (payload.isActive) {
         next();
-        return
+        return;
       } else {
-        throw new NotFoundError("User dosen't exist")
+        throw new NotFoundError("User dosen't exist");
       }
     } catch (error) {
       next(error);

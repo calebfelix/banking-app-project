@@ -352,10 +352,10 @@ try {
         throw new UnauthorizedError("Not a User");
       }
       if (typeof toAccountNo != "number") {
-        throw new ValidationError("Not a Valid to AccountNo");
+        throw new ValidationError("Not a Valid toAccountNo");
       }
       if (typeof fromAccountNo != "number") {
-        throw new ValidationError("Not a Valid from AccountNo");
+        throw new ValidationError("Not a Valid fromAccountNo");
       }
       if (typeof transferAmount != "number") {
         throw new ValidationError("Not a Valid Amount");
