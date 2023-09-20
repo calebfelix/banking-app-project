@@ -6,7 +6,7 @@ const bankRouter = express.Router()
 
 bankRouter.use(Jwtauthentication.isAdmin)
 
-// Bank CRUD
+// Bank CRU
 bankRouter.post('/', createBank)
 bankRouter.get('/', getAllBanks)
 bankRouter.get('/:bankId', getBankById)

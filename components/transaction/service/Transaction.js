@@ -15,9 +15,6 @@ class Transaction {
     this.type = type;
   }
 
-  getDate(){
-    return this.date
-  }
 }
 
 module.exports = Transaction;

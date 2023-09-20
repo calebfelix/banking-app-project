@@ -1,23 +1,19 @@
 const express = require('express')
-const {createAccount,getAccountByDate, getAllAccounts,getNetWorth, getAccountByAccNo, depositAmount,withdrawAmount,transferAmount,getPassbook} = require('./controller/Account')
+const {createAccount, getAllAccounts,getNetWorth, getAccountByAccNo} = require('./controller/Account')
 const Jwtauthentication = require('../../middleware/Jwtauthentication')
+const { transactionRouter } = require('../transaction')
 
 const accountRouter = express.Router({ mergeParams: true })
 
 accountRouter.use(Jwtauthentication.isUser)
 
 
-// Admin CRUD
+// Account CR
+accountRouter.get('/networth', getNetWorth)
 accountRouter.post('/', createAccount)
 accountRouter.get('/', getAllAccounts)
-accountRouter.get('/networth', getNetWorth)
 accountRouter.get('/:AccountNo', getAccountByAccNo)
 
-accountRouter.put('/deposit/:AccountNo', depositAmount)
-accountRouter.put('/withdraw/:AccountNo', withdrawAmount)
-accountRouter.put('/transfer/:AccountNo', transferAmount)
-accountRouter.get('/passbook/:AccountNo', getPassbook)
-accountRouter.get('/Accountbydate/:AccountNo', getAccountByDate)
-
+accountRouter.use('/:AccountNo/transaction', transactionRouter)
 
 module.exports = { accountRouter }

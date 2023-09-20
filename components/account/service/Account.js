@@ -1,5 +1,5 @@
 const Bank = require("../../bank/service/Bank");
-const Transaction = require("../../../Transaction");
+const Transaction = require("../../transaction/service/Transaction");
 const {
   NotFoundError,
   ValidationError,
