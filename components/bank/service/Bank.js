@@ -8,7 +8,7 @@ class Bank {
   static bankId = 100;
   static allBanks = [];
   constructor(bankName, abrivation) {
-    this.bankId = Bank.bankId++;
+    // this.bankId = Bank.bankId++;
     this.bankName = bankName;
     this.abrivation = abrivation;
     this.accounts = [];

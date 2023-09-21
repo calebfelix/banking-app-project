@@ -6,19 +6,19 @@ const {
   UnauthorizedError,
 } = require("../../../error");
 const Jwtauthentication = require("../../../middleware/Jwtauthentication");
-const bcrypt = require('bcrypt')
+const bcrypt = require('bcrypt');
+const db = require("../../../models");
 
 class User {
-  static userId = 0;
+  // static userId = 0;
   static allUsers = [];
   constructor(name, age, gender, isAdmin, username, password) {
-    this.userId = User.userId++;
+    // this.userId = User.userId++;
     this.name = name;
     this.age = age;
     this.gender = gender;
     this.isAdmin = isAdmin;
     this.accounts = [];
-    this.netWorth = 0;
     this.username=username;
     this.password=password
   }
@@ -130,10 +130,11 @@ try {
       if (typeof gender != "string") {
         throw new ValidationError("invalid gender");
       }
-      let hashedPassword = bcrypt.hash(password, 12)
-      let newAdmin = new User(name, age, gender, true, username, await hashedPassword);
-      User.allUsers.push(newAdmin)
-      return newAdmin;
+      let hashedPassword = await bcrypt.hash(password, 12)
+      let newAdmin = new User(name, age, gender, true, username, hashedPassword);
+      let myAdmin = await db.user.create(newAdmin)
+      // User.allUsers.push(myAdmin)
+      return myAdmin;
     } catch (error) {
       return error;
     }
@@ -459,16 +460,17 @@ try {
 
 module.exports = User;
 
-let driver = async()=>{
-  let admin = await User.newAdmin("caleb", 3, "m", "admin", "password");
-  let user1 = await User.newUser("u1", 22, "m", "u1", "password");
-  let user2 = await User.newUser("u2", 25, "f","u2", "password");
-  Bank.newBank("Indian Bank")
-  Bank.newBank("Axis Bank")
-  Bank.newBank("Maharashtra Bank")
-  Bank.newBank("Bank of Baroda")
-  Bank.newBank("Bank of Andhra")
-}
+// let driver = async()=>{
+//   let admin = await User.newAdmin("caleb", 3, "m", "admin", "password");
+//   let user1 = await User.newUser("u1", 22, "m", "u1", "password");
+//   let user2 = await User.newUser("u2", 25, "f","u2", "password");
+//   Bank.newBank("Indian Bank")
+//   Bank.newBank("Axis Bank")
+//   Bank.newBank("Maharashtra Bank")
+//   Bank.newBank("Bank of Baroda")
+//   Bank.newBank("Bank of Andhra")
 
-driver()
+// }
+
+// driver()
 
