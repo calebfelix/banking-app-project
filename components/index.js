@@ -13,8 +13,8 @@ const mainRouter = express.Router()
 mainRouter.post('/login', async(req, res, next)=>{
     try {
         const { username, password } = req.body;
-        const token =  User.authenticateUser(username, password);
-        res.cookie(process.env.AUTH_COOKIE_NAME, await token);
+        const token = await User.authenticateUser(username, password);
+        res.cookie(process.env.AUTH_COOKIE_NAME, token);
         res.status(200).send("Login Done");
       } catch (error) {
         next(error);

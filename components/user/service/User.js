@@ -22,20 +22,140 @@ class User {
     this.username=username;
     this.password=password
   }
-  // Utility Functions
-  updateNetWorth() {
-    let total = 0;
-    for (let index = 0; index < this.accounts.length; index++) {
-      total = total + this.accounts[index].AccountBalance;
+  
+  static async getUserByUsername(username) {
+    const t = await db.sequelize.transaction();
+    try {
+      let myUsers = await db.user.findAll({ where: { username: username } , transaction:t});
+      await t.commit()
+      return myUsers;
+    } catch (error) {
+      await t.rollback()
+      throw error;
     }
-    this.netWorth = total;
-    return this.netWorth;
+  }
+  
+  /// CREATE user///
+  static async newAdmin(name, age, gender, username, password) {
+    const t = await db.sequelize.transaction();
+    try {
+      if (typeof name != "string") {
+        throw new ValidationError("invalid First Name");
+      }
+      if (typeof age != "number") {
+        throw new ValidationError("invalid age");
+      }
+      if (typeof gender != "string") {
+        throw new ValidationError("invalid gender");
+      }
+      let hashedPassword = await bcrypt.hash(password, 12)
+      let newAdmin = new User(name, age, gender, true, username, hashedPassword);
+      let myAdmin = await db.user.create(newAdmin,t)
+      await t.commit()
+      return myAdmin;
+    } catch (error) {
+      await t.rollback()
+      throw error;
+    }
+  }
+  
+  static async newUser(name, age, gender, username, password) {
+    const t = await db.sequelize.transaction();
+    try {
+      if (typeof name != "string") {
+        throw new ValidationError("invalid First Name");
+      }
+      if (typeof age != "number") {
+        throw new ValidationError("invalid age");
+      }
+      if (typeof gender != "string") {
+        throw new ValidationError("invalid gender");
+      }
+      let hashedPassword = await bcrypt.hash(password, 12)
+      let newUserObj = new User(name, age, gender, false, username, hashedPassword);
+      let newUser = await db.user.create(newUserObj,t)
+      await t.commit()
+      return newUser;
+    } catch (error) {
+      await t.rollback()
+      throw error;
+    }
+  }
+  
+  /// READ user///
+  static async getAllUsers(offset, limit) {
+    const t = await db.sequelize.transaction();
+    try {
+      let allUsers = await db.user.findAndCountAll({
+        include: { all: true, nested: true },
+        offset: offset,
+        limit: limit,
+        transaction:t
+      });
+      await t.commit()
+      return allUsers;
+    } catch (error) {
+      await t.rollback()
+      return error;
+    }
+  }
+  
+  static async getUserById(id) {
+    const t = await db.sequelize.transaction();
+    try {
+      let myUser = await db.user.findAll({ where: { id: id }, include: { all: true, nested: true }, transaction:t});
+      await t.commit()
+      return myUser;
+    } catch (error) {
+      await t.rollback()
+      throw error;
+    }
   }
 
-  getAccounts(){
-return this.accounts
+  /// UPDATE user///
+  static async updateUser(id, parameter, newValue) {
+    const t = await db.sequelize.transaction();
+    try {
+      let userToBeUpdated = await User.getUserById(id);
+      console.log(userToBeUpdated)
+      if (userToBeUpdated.length == 0) {
+        throw new NotFoundError("User Not Found!");
+      }
+      let up = undefined
+
+      switch (parameter) {
+        case "name":
+          up = await db.user.update(
+            { name: newValue },
+            { where: { id: id }, transaction:t }
+          );
+          await t.commit()
+          return up
+        case "age":
+          up = await db.user.update(
+            { age: newValue },
+            { where: { id: id }, transaction:t }
+          );
+          await t.commit()
+          return up
+          case "gender":
+          up = await db.user.update(
+            { gender: newValue },
+            { where: { id: id }, transaction:t }
+          );
+          await t.commit()
+          return up
+        default:
+          throw new ValidationError("Invalid Parameter");
+      }
+    } catch (error) {
+      await t.rollback()
+      throw error;
+    }
   }
 
+
+// ------------------------------------------------------------------------------------------------
   static findUserByUsername(username) {
     try {
       for (let index = 0; index < User.allUsers.length; index++) {
@@ -49,7 +169,7 @@ return this.accounts
       throw error;
     }
   }
-
+  
   getNetWorth() {
     return this.netWorth;
   }
@@ -62,20 +182,33 @@ return this.accounts
     }
     return null;
   }
-
+  
   static findUserById(userId) {
-try {
-  for (let index = 0; index < User.allUsers.length; index++) {
-    if (userId === User.allUsers[index].userId) {
-      return User.allUsers[index];
+    try {
+      for (let index = 0; index < User.allUsers.length; index++) {
+        if (userId === User.allUsers[index].userId) {
+          return User.allUsers[index];
+        }
+      }  
+      throw new NotFoundError("User Not Found");
+    } catch (error) {
+      throw error;
     }
-  }  
-  throw new NotFoundError("User Not Found");
-} catch (error) {
-  throw error;
-}
+  }
+  
+  // Utility Functions
+  updateNetWorth() {
+    let total = 0;
+    for (let index = 0; index < this.accounts.length; index++) {
+      total = total + this.accounts[index].AccountBalance;
+    }
+    this.netWorth = total;
+    return this.netWorth;
   }
 
+  getAccounts(){
+return this.accounts
+  }
   findUserAccount(accountNumber) {
     for (let index = 0; index < this.accounts.length; index++) {
       if (accountNumber == this.accounts[index].AccountNumber) {
@@ -118,85 +251,8 @@ try {
     }
   }
 
-  /// CREATE user///
-  static async newAdmin(name, age, gender, username, password) {
-    try {
-      if (typeof name != "string") {
-        throw new ValidationError("invalid First Name");
-      }
-      if (typeof age != "number") {
-        throw new ValidationError("invalid age");
-      }
-      if (typeof gender != "string") {
-        throw new ValidationError("invalid gender");
-      }
-      let hashedPassword = await bcrypt.hash(password, 12)
-      let newAdmin = new User(name, age, gender, true, username, hashedPassword);
-      let myAdmin = await db.user.create(newAdmin)
-      // User.allUsers.push(myAdmin)
-      return myAdmin;
-    } catch (error) {
-      return error;
-    }
-  }
 
-  static async newUser(name, age, gender, username, password) {
-    try {
-      if (typeof name != "string") {
-        throw new ValidationError("invalid First Name");
-      }
-      if (typeof age != "number") {
-        throw new ValidationError("invalid age");
-      }
-      if (typeof gender != "string") {
-        throw new ValidationError("invalid gender");
-      }
-      let hashedPassword = bcrypt.hash(password, 12)
-      let newUser = new User(name, age, gender, false, username, await hashedPassword);
-      User.allUsers.push(newUser);
-      return newUser;
-    } catch (error) {
-      return error;
-    }
-  }
 
-  /// READ user///
-  static getAllUsers() {
-    try {
-      if (User.allUsers.length === 0) {
-        throw new NotFoundError("Contact list is empty");
-      }
-      return User.allUsers;
-    } catch (error) {
-      return error;
-    }
-  }
-
-  /// UPDATE user///
-  static updateUser(userId, parameter, newValue) {
-    try {
-      let userToBeUpdated = User.findUser(userId);
-      if (userToBeUpdated == null) {
-        throw new NotFoundError("User Not Found!");
-      }
-
-      switch (parameter) {
-        case "name":
-          userToBeUpdated.updateName(newValue);
-          return userToBeUpdated;
-        case "age":
-          userToBeUpdated.updateAge(newValue);
-          return userToBeUpdated;
-        case "gender":
-          userToBeUpdated.updateGender(newValue);
-          return userToBeUpdated;
-        default:
-          throw new ValidationError("Invalid Parameter");
-      }
-    } catch (error) {
-      return error;
-    }
-  }
 
   /// CREATE Bank///
   newBank(bankName) {
@@ -444,9 +500,9 @@ try {
 
   static async authenticateUser(username, password) {
     try {
-    let myUser = User.findUserByUsername(username);
-    let check = bcrypt.compare(password, myUser.password)
-    if (!await check) {
+    let [myUser] = await User.getUserByUsername(username);
+    let check = await bcrypt.compare(password, myUser.dataValues.password)
+    if (!check) {
       throw new UnauthorizedError("authentication failed");
     }
       const token = Jwtauthentication.authenticate(myUser.userId, myUser.username, myUser.isAdmin)
