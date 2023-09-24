@@ -1,6 +1,5 @@
 const User = require("../service/User");
 const { ValidationError, NotFoundError } = require("../../../error");
-const Bank = require("../../bank/service/Bank");
 
 const createUser = async (req, resp, next) => {
   try {
@@ -29,11 +28,11 @@ const getAllUsers = async (req, resp, next) => {
 
 const getUserById = async (req, resp, next) => {
   try {
-    let id = Number(req.params.id);
-    if (isNaN(id)) {
+    let userId = Number(req.params.userId);
+    if (isNaN(userId)) {
       throw new ValidationError("invalid parameters");
     }
-    let myUser = await User.getUserById(id);
+    let myUser = await User.getUserById(userId);
     if (myUser.length == 0) {
       throw new NotFoundError("User Not Found");
     }
@@ -60,11 +59,27 @@ const updateUser = async (req, resp, next) => {
   }
 };
 
-
+const getNetWorth = async(req, resp, next) => {
+  try {
+    let userId = Number(req.params.userId);
+    if (isNaN(userId)) {
+      throw new ValidationError("invalid parameters");
+    }
+    let myUser = await User.getUserById(userId)
+    if (myUser.length == 0) {
+      throw new NotFoundError("User Not Found");
+    }
+    let networth = await User.getNetWorth(userId)
+    resp.status(200).json(networth);
+  } catch (error) {
+    next(error);
+  }
+};
 
 module.exports = {
   getAllUsers,
   createUser,
   getUserById,
   updateUser,
+  getNetWorth
 };

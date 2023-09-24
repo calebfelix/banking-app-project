@@ -1,112 +1,53 @@
-const Bank = require("../../bank/service/Bank");
-const Transaction = require("../../transaction/service/Transaction");
-const {
-  NotFoundError,
-  ValidationError,
-  UnauthorizedError,
-} = require("../../../error");
+const db = require("../../../models");
 
 class Account {
-  static AccountNumber = 1000000;
-  static allAccounts = [];
-
   constructor(bankName, bankId, userId) {
-    this.AccountNumber = Account.AccountNumber++;
     this.bankName = bankName;
     this.bankId = bankId;
     this.userId = userId;
-    this.AccountBalance = 1000;
-    this.passbook = [];
   }
 
-  getDate() {
-    let today = new Date();
-    return today.toLocaleDateString();
-  }
-  getPassbook() {
-    return this.passbook;
-  }
-
-  static findAccount(AccountNumber) {
-    for (let index = 0; index < Account.allAccounts.length; index++) {
-      if (AccountNumber === Account.allAccounts[index].AccountNumber) {
-        return Account.allAccounts[index];
-      }
-    }
-    return null;
-  }
-
-  static findByAccountNo(AccountNumber) {
+  static async getByAccountId(userId, AccountId) {
+    const t = await db.sequelize.transaction();
     try {
-      for (let index = 0; index < Account.allAccounts.length; index++) {
-        if (Account.allAccounts[index].AccountNumber === AccountNumber) {
-          let foundObject = Account.allAccounts[index];
-          return foundObject;
-        }
-      }
-      throw new NotFoundError("Account Not Found");
+      let myAcc = await db.account.findAll({
+        where: { id: AccountId, userId: userId },
+        transaction: t,
+      });
+      await t.commit();
+      return myAcc;
     } catch (error) {
+      await t.rollback();
       throw error;
     }
   }
-  
-  static newAccount(bankId, userId) {
+
+  static async getAllAccounts(userId, offset, limit) {
+    const t = await db.sequelize.transaction();
     try {
-      if (typeof bankId != "number") {
-        throw new ValidationError("invalid bank id");
-      }
+      let allUsers = await db.account.findAndCountAll({
+        where: { userId, userId },
+        offset: offset,
+        limit: limit,
+        transaction: t,
+      });
+      await t.commit();
+      return allUsers;
+    } catch (error) {
+      await t.rollback();
+      throw error;
+    }
+  }
 
-      let [bank, bankIndex] = Bank.findBank(bankId);
-
-      if (bank == null) {
-        throw new NotFoundError("bank not found");
-      }
-
-      let newAccount = new Account(bank.bankName, bank.bankId, userId);
-      Account.allAccounts.push(newAccount);
+  static async newAccount(bankName, bankId, userId) {
+    const t = await db.sequelize.transaction();
+    try {
+      let newAccountObj = new Account(bankName, bankId, userId);
+      let newAccount = await db.account.create(newAccountObj, t);
+      await t.commit();
       return newAccount;
     } catch (error) {
-      throw error;
-    }
-  }
-
-  addAmount(amount, senderAccountNo, receverAccountNo) {
-    try {
-      this.AccountBalance = this.AccountBalance + amount;
-      let newTransaction = new Transaction(
-        this.getDate(),
-        senderAccountNo,
-        receverAccountNo,
-        amount,
-        this.AccountBalance,
-        "Credit"
-      );
-      this.passbook.push(newTransaction);
-      return this.AccountBalance;
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  deductAmount(amount, senderAccountNo, receverAccountNo) {
-    try {
-      if (this.AccountBalance - amount < 1000) {
-        throw new ValidationError(
-          "insufficent balance amount exceding minimum balance"
-        );
-      }
-      this.AccountBalance = this.AccountBalance - amount;
-      let newTransaction = new Transaction(
-        this.getDate(),
-        senderAccountNo,
-        receverAccountNo,
-        amount,
-        this.AccountBalance,
-        "debit"
-      );
-      this.passbook.push(newTransaction);
-      return this.AccountBalance;
-    } catch (error) {
+      await t.rollback();
       throw error;
     }
   }

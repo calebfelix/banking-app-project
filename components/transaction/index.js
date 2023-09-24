@@ -1,9 +1,11 @@
 const express = require('express')
+const Jwtauthentication = require('../../middleware/Jwtauthentication')
 const {getAccountByDate, depositAmount,withdrawAmount,transferAmount,getPassbook} = require('./controller/Transaction')
 
 const transactionRouter = express.Router({ mergeParams: true })
 
-// transactionRouter.use(Jwtauthentication.isUser)
+transactionRouter.use(Jwtauthentication.isCurrentUserAccount)
+
 
 // transaction functions
 transactionRouter.put('/deposit', depositAmount)

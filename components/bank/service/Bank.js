@@ -3,63 +3,50 @@ const {
   ValidationError,
   UnauthorizedError,
 } = require("../../../error");
+const db = require("../../../models");
 
 class Bank {
-  static bankId = 100;
-  static allBanks = [];
   constructor(bankName, abrivation) {
-    // this.bankId = Bank.bankId++;
     this.bankName = bankName;
     this.abrivation = abrivation;
-    this.accounts = [];
-    this.bankTotal = 0;
   }
 
-  updateBankTotal() {
-    let total = 0;
-    for (let index = 0; index < this.accounts.length; index++) {
-      total = total + this.accounts[index].AccountBalance;
-    }
-    this.bankTotal = total;
-    return this.bankTotal;
+  static async updateBankTotal(bankId) {
+    const t = await db.sequelize.transaction();
+try {
+  let total=0;
+  let [myBank] = await db.bank.findAll({transaction:t,where:{id:bankId},attributes:['bank_total'],include:{model:db.account,attributes:['account_balance']},})
+  myBank.accounts.forEach(element => {
+    total = total + element.dataValues.account_balance
+  });
+  let up = await db.bank.update({ bankTotal: total },{ where: { id: bankId }, transaction:t })
+  if([up]==0){
+    throw new ValidationError("could not update bankTotal")
+  }
+  let returnBank = await db.bank.findAll({transaction:t,where:{id:bankId}})
+  await t.commit();
+  return returnBank
+
+} catch (error) {
+  await t.rollback();
+    throw error;
+}
   }
 
-  getAccountsList() {
-    return this.accounts;
-  }
-  getBankTotal() {
-    return this.bankTotal;
-  }
-
-  static findBank(bankId) {
-    for (let index = 0; index < Bank.allBanks.length; index++) {
-      if (bankId === Bank.allBanks[index].bankId) {
-        return [Bank.allBanks[index], index];
-      }
-    }
-    return [null, -1];
-  }
-
-  static findBankById(bankId) {
+  static async getBankTotal(bankId) {
+    const t = await db.sequelize.transaction();
     try {
-      for (let index = 0; index < Bank.allBanks.length; index++) {
-        if (bankId === Bank.allBanks[index].bankId) {
-          return Bank.allBanks[index];
-        }
-      }  
-      throw new NotFoundError("Bank Not Found");
+      await Bank.updateBankTotal(bankId)
+      let myBank = await db.bank.findAll({
+        where: { id: bankId },
+        attributes: ["bank_total"],
+      });
+      await t.commit();
+      return myBank;
     } catch (error) {
+      await t.rollback();
       throw error;
     }
-      }
-
-  findBankAccount(accountNumber) {
-    for (let index = 0; index < this.accounts.length; index++) {
-      if (accountNumber === this.accounts[index].accountNumber) {
-        return this.accounts[index];
-      }
-    }
-    return null;
   }
 
   static abrivation(bankName) {
@@ -70,33 +57,74 @@ class Bank {
     return words.join("");
   }
 
-  static updateBankName(bankId, newValue) {
+  static async newBank(bankName) {
+    const t = await db.sequelize.transaction();
     try {
-      let [bankToBeUpdated, bankToBeUpdatedIndex] = Bank.findBank(bankId);
-      if (bankToBeUpdated == null) {
-        throw new NotFoundError("User Not Found!");
-      }
-      bankToBeUpdated.bankName = newValue;
-      bankToBeUpdated.abrivation = Bank.abrivation(newValue);
-      return bankToBeUpdated;
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  static newBank(bankName) {
-    try {
-      if (typeof bankName != "string") {
-        throw new ValidationError("invalid Bank Name");
-      }
-
-      let newBank = new Bank(bankName, Bank.abrivation(bankName));
-      Bank.allBanks.push(newBank);
+      let newBankObj = new Bank(bankName, Bank.abrivation(bankName));
+      let newBank = await db.bank.create(newBankObj, t);
+      await t.commit();
       return newBank;
     } catch (error) {
+      await t.rollback();
       throw error;
     }
   }
+
+  static async getAllBanks(offset, limit) {
+    const t = await db.sequelize.transaction();
+    try {
+      let allBanks = await db.bank.findAndCountAll({
+        include: { all: true, nested: true },
+        offset: offset,
+        limit: limit,
+        transaction: t,
+      });
+      await t.commit();
+      return allBanks;
+    } catch (error) {
+      await t.rollback();
+      throw error;
+    }
+  }
+
+  static async getBankById(id) {
+    const t = await db.sequelize.transaction();
+    try {
+      let myBank = await db.bank.findAll({
+        where: { id: id },
+        include: { all: true, nested: true },
+        transaction: t,
+      });
+      await t.commit();
+      return myBank;
+    } catch (error) {
+      await t.rollback();
+      throw error;
+    }
+  }
+
+  static async updateBankName(bankId, newValue) {
+    const t = await db.sequelize.transaction();
+    try {
+      let up = await db.bank.update(
+        { bankName: newValue },
+        { where: { id: bankId }, transaction: t }
+      );
+      let newAbrivation = Bank.abrivation(newValue);
+      await db.bank.update(
+        { abrivation: newAbrivation },
+        { where: { id: bankId }, transaction: t }
+      );
+      await t.commit();
+      console.log(up);
+      return up;
+    } catch (error) {
+      await t.rollback();
+      throw error;
+    }
+  }
+
+  
 }
 
 module.exports = Bank;
